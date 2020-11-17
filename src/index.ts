@@ -12,9 +12,11 @@ import redis from 'redis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
 import cors from 'cors';
+import { sendEmail } from "./utils/sendEmail";
 
 
 const main = async () => {
+    sendEmail('nav@nav.com', 'Hello there!');
     const orm = await MikroORM.init(microConfig);
     await orm.getMigrator().up(); // runs the migrations before it gets anuthing up.
     
