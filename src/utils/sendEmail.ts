@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import { keys } from '../keys';
 
 // async..await is not allowed in global scope, must use a wrapper
-export async function sendEmail(to: string, text: string) {
+export async function sendEmail(to: string, html: string) {
   // Generate test SMTP service account from ethereal.email
   // Only needed if you don't have a real mail account for testing
   // let testAccount = await nodemailer.createTestAccount();
@@ -24,7 +24,7 @@ console.log(keys)
     from: '"Fred Foo 👻" <foo@example.com>', // sender address
     to: to, // list of receivers
     subject: "Change Password", // Subject line
-    text, // plain text body
+    html, // plain text body
   });
 
   console.log("Message sent: %s", info.messageId);

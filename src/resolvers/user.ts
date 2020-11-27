@@ -1,18 +1,13 @@
 import { MyContext } from 'src/types';
-import { Arg, Ctx, Field, InputType, Query, Resolver, Mutation, ObjectType } from 'type-graphql';
+import { Arg, Ctx, Field, Query, Resolver, Mutation, ObjectType } from 'type-graphql';
 import { User } from '../entities/User';
 import argon2 from 'argon2';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { COOKIE_NAME } from '../constants';
+import { UsernamePasswordInput } from './UsernamePasswordInput';
+import { validateRegister } from '../utils/validateRegister';
+import { sendEmail } from 'src/utils/sendEmail';
 
-
-@InputType()
-export class UsernamePasswordInput {
-  @Field()
-  username: string
-  @Field()
-  password: string
-}
 
 @ObjectType()
 class FieldError {
@@ -34,6 +29,25 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg('email') email: string,
+    @Ctx() {em, req} : MyContext
+  ) {
+    const user = await em.findOne(User, { email });
+    if (!user) {
+      // the email is not in the display: 'block',
+      return true;
+    }
+
+    
+    await sendEmail(
+      email,
+      `<a href="http://localhost:3000/change-password/${token}">reset password</a>`
+    )
+    return true;
+  }
+
   @Query(() => User, { nullable: true })
   async me(
     @Ctx() { em, req}: MyContext
@@ -53,26 +67,9 @@ export class UserResolver {
     @Ctx() {em, req }: MyContext
   ): Promise<UserResponse> {
 
-    if (options.username.length <= 2) {
-      return {
-        errors: [
-          {
-            field: "username",
-            message: "Must be atleast 3 characters long."
-          }
-        ]
-      }
-    }
-
-    if (options.password.length <= 2) {
-      return {
-        errors: [
-          {
-            field: "password",
-            message: "Password must be atleast 3 characters long."
-          }
-        ]
-      }
+    const errors = validateRegister(options);
+    if (errors) {
+      return { errors };
     }
 
     const hashedPassword = await argon2.hash(options.password);
@@ -86,6 +83,7 @@ export class UserResolver {
         .createQueryBuilder(User)
         .getKnexQuery()
         .insert({
+          email: options.email,
           username: options.username,
           password: hashedPassword,
           created_at: new Date(),
@@ -125,19 +123,25 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg('options') options: UsernamePasswordInput,
+    @Arg('usernameOrEmail') usernameOrEmail: string,
+    @Arg('password') password: string,
     @Ctx() {em, req}: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(User, { username: options.username });
+    const user = await em.findOne(
+      User,
+      usernameOrEmail.includes('@')
+        ? { email: usernameOrEmail }
+        : { username: usernameOrEmail }
+    );
     if (!user) {
       return {
         errors: [{
-          field: "username",
+          field: "usernameOrEmail",
           message: "username doesn't exist",
         }]
       }
     }
-    const valid = await argon2.verify(user.password, options.password);
+    const valid = await argon2.verify(user.password, password);
     if (!valid) {
       return {
         errors: [

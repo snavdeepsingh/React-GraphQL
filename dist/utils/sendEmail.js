@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendEmail = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const keys_1 = require("../keys");
-function sendEmail(to, text) {
+function sendEmail(to, html) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(keys_1.keys);
         let transporter = nodemailer_1.default.createTransport({
@@ -31,7 +31,7 @@ function sendEmail(to, text) {
             from: '"Fred Foo 👻" <foo@example.com>',
             to: to,
             subject: "Change Password",
-            text,
+            html,
         });
         console.log("Message sent: %s", info.messageId);
         console.log("Preview URL: %s", nodemailer_1.default.getTestMessageUrl(info));
