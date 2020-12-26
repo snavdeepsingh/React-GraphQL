@@ -13,6 +13,8 @@ import cors from 'cors';
 import { createConnection } from 'typeorm';
 import { Post } from './entities/Post';
 import { User } from './entities/User';
+import path from 'path';
+import { Updoot } from './entities/Updoot';
 
 
 const main = async () => {
@@ -23,9 +25,14 @@ const main = async () => {
         password: 'postgres',
         logging: true,
         synchronize: true,
-        entities: [Post, User]
+        migrations: [path.join(__dirname, "./migrations/*")],
+        entities: [Post, User, Updoot]
     });
+
+    await connection.runMigrations();
     
+    // await Post.delete({});
+
     const app = express();
 
     const RedisStore = connectRedis(session);
