@@ -230,7 +230,7 @@ export class UserResolver {
   logout(
     @Ctx() {req, res}: MyContext
   ) {
-    return new Promise(resolve => req.session.destroy((err)=> {
+    return new Promise(resolve => req.session.destroy((err: any)=> {
       res.clearCookie(COOKIE_NAME);
       if (err) {
         console.log(err);

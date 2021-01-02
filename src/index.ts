@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "dotenv-safe/config";
 import { COOKIE_NAME, __prod__ } from './constants';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
@@ -22,9 +23,7 @@ import { createUpdootLoader } from "./utils/createUpdootLoader";
 const main = async () => {
     const connection = await createConnection({
         type: 'postgres',
-        database: 'react_postgres',
-        username: 'postgres',
-        password: 'postgres',
+        url: process.env.DATABASE_URL,
         logging: true,
         synchronize: true,
         migrations: [path.join(__dirname, "./migrations/*")],
@@ -38,7 +37,8 @@ const main = async () => {
     const app = express();
 
     const RedisStore = connectRedis(session);
-    const redis = new Redis();
+    const redis = new Redis(process.env.REDIS_URL);
+    app.set('trust proxy', 1);
     app.use(
         cors({
             origin: 'http://localhost:3000',
@@ -57,10 +57,11 @@ const main = async () => {
                 maxAge: 1000 * 60 * 60 * 24 * 7, // 1 weeek
                 httpOnly: true,
                 sameSite: "lax",
-                secure: __prod__// cookie only works in htps
+                secure: __prod__, // cookie only works in htps
+                domain: __prod__ ? '.snavdeepsingh.com' : undefined
             },
             saveUninitialized: false,
-            secret: "qwoehroqewuroiquweoiru",
+            secret: process.env.SESSION_SECRET,
             resave: false,
         })
     )
@@ -87,7 +88,7 @@ const main = async () => {
         app,
         cors: false,
     })
-    app.listen(4000, () => {
+    app.listen(parseInt(process.env.PORT), () => {
         console.log('server listening on localhost:4000');
     })
 };
